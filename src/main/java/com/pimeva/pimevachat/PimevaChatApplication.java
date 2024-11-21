@@ -8,6 +8,7 @@ public class PimevaChatApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(PimevaChatApplication.class, args);
+		
 	}
 
 }
