@@ -1,11 +1,13 @@
-package com.pimeva.modelos;
+package com.pimeva.pimevachat.modelos;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.List;
+import java.util.Objects;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,7 +20,5 @@ public class User {
     private String password;
     private String profilePicture;
     private boolean online;
-
-
 
 }

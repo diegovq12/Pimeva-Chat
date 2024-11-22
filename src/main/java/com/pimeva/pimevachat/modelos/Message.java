@@ -1,4 +1,4 @@
-package com.pimeva.modelos;
+package com.pimeva.pimevachat.modelos;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-
 public class Message {
     @Id
     private String id;
@@ -20,6 +19,4 @@ public class Message {
     private String senderId;
     private String receiverId;
     private LocalDateTime dateTime;
-
-
 }
