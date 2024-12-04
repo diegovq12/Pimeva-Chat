@@ -15,8 +15,15 @@ import java.time.LocalDateTime;
 public class Message {
     @Id
     private String id;
+
+    private String chatId;
     private String content;
     private String senderId;
     private String receiverId;
     private LocalDateTime dateTime;
+
+    private String fileUrl; //  para mensajes multimedia
+    private MessageStatus status; // Estados que puede tener el mensaje
+    //"Sent", "Delivered", "Read"
+
 }
