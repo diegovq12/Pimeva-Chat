@@ -11,6 +11,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
+@CrossOrigin(origins = "http://localhost:3000")
 public class UserController {
 
     private final UserService userService;
@@ -37,6 +38,11 @@ public class UserController {
         Optional<User> exists = userRepository.findByUsername(username);
         System.out.println("Usuario existe?"+exists);
         return ResponseEntity.ok(exists);  // Retorna true si el usuario ya existe
+    }
+
+    @GetMapping("/getUserId")
+    public String getUserId(@RequestParam String username) {
+        return userService.getUserIdByUsername(username);
     }
 
 }

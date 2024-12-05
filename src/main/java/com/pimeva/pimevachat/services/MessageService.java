@@ -3,10 +3,7 @@ package com.pimeva.pimevachat.services;
 import com.pimeva.pimevachat.exceptions.ChatNotFoundException;
 import com.pimeva.pimevachat.interfaces.ChatRepository;
 import com.pimeva.pimevachat.interfaces.MessageRepository;
-import com.pimeva.pimevachat.modelos.Chat;
-import com.pimeva.pimevachat.modelos.Message;
-import com.pimeva.pimevachat.modelos.MessageStatus;
-import com.pimeva.pimevachat.modelos.User;
+import com.pimeva.pimevachat.modelos.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -67,8 +64,23 @@ public class MessageService {
         return message;
     }
 
+    public Message processMessage(MessageDTO messageDTO) {
+        Message message = new Message();
+        message.setSenderId(String.valueOf(messageDTO.getSenderId()));
+        message.setReceiverId(String.valueOf(messageDTO.getReceiverId()));
+        message.setContent(messageDTO.getContent());
+        message.setDateTime(LocalDateTime.parse(LocalDateTime.now().toString()));
 
-
-
+        // Guardar el mensaje en la base de datos
+        return messageRepository.save(message);
+    }
+    public Message add(MessageDTO messageDTO) {
+        Message message = new Message();
+        message.setSenderId(messageDTO.getSenderId());
+        message.setReceiverId(messageDTO.getReceiverId());
+        message.setContent(messageDTO.getContent());
+        message.setDateTime(LocalDateTime.parse(LocalDateTime.now().toString()));
+        return messageRepository.save(message);
+    }
 
 }

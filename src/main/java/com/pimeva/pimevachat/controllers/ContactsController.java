@@ -12,6 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/contacts")
+@CrossOrigin(origins = "http://localhost:3000")
 public class ContactsController {
     @Autowired
     private UserService userService;
@@ -29,7 +30,6 @@ public class ContactsController {
     }
 
     @GetMapping("/get-contacts")
-    @CrossOrigin(origins = "http://localhost:3000")
     public ResponseEntity<List<ContactDTO>> getContacts(@RequestParam String userId) throws UserNotFoundException {
         List<ContactDTO> contacts = userService.getContacts(userId);  // Llama al servicio
         return ResponseEntity.ok(contacts);  // Retorna los contactos en la respuesta

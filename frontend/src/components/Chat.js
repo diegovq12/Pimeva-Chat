@@ -1,127 +1,266 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FiSend, FiPhone, FiVideo } from 'react-icons/fi';
+import { FiSend } from 'react-icons/fi';
+import { useLocation,useNavigate } from 'react-router-dom'; // Usamos useLocation para obtener el estado de la sesión
+import axios from "axios";
+import { Client } from "@stomp/stompjs";
 
+// Estilos para los componentes
 const Container = styled.div`
-  display: flex;
-  height: 100vh;
-  background-color: #f0f2f5;
+    display: flex;
+    height: 100vh;
+    background-color: #f0f2f5;
 `;
 
 const ContactList = styled.div`
-  width: 30%;
-  background-color: white;
-  border-right: 1px solid #e0e0e0;
+    width: 30%;
+    background-color: white;
+    border-right: 1px solid #e0e0e0;
 `;
 
 const ChatArea = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 `;
 
 const Header = styled.div`
-  padding: 16px;
-  background-color: #f0f2f5;
-  border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background-color: #f0f2f5;
+    border-bottom: 1px solid #e0e0e0;
 `;
 
 const MessageList = styled.div`
-  flex: 1;
-  padding: 16px;
-  overflow-y: auto;
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
 `;
 
 const InputArea = styled.form`
-  display: flex;
-  padding: 16px;
-  background-color: #f0f2f5;
+    display: flex;
+    padding: 16px;
+    background-color: #f0f2f5;
+    margin-bottom: 30px;
 `;
 
 const Input = styled.input`
-  flex: 1;
-  padding: 8px;
-  border: 1px solid #e0e0e0;
-  border-radius: 20px;
+    width: 100%; /* Cambia el ancho al 80% */
+    padding: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 20px;
 `;
 
 const Button = styled.button`
-  margin-left: 8px;
-  padding: 8px 16px;
-  background-color: #0084ff;
-  color: white;
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
+    width: 15%;
+    margin-left: 8px;
+    padding: 8px 16px;
+    background-color: #0084ff;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
 `;
 
+
 const ContactItem = styled.div`
-  padding: 16px;
-  border-bottom: 1px solid #e0e0e0;
-  cursor: pointer;
-  &:hover {
-    background-color: #f0f2f5;
-  }
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #e0e0e0;
+    cursor: pointer;
+
+    &:hover {
+        background-color: #f0f2f5;
+    }
+`;
+
+const ProfileImage = styled.img`
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    margin-right: 16px;
 `;
 
 const Message = styled.div`
-  margin-bottom: 8px;
-  padding: 8px;
-  background-color: ${props => props.isUser ? '#0084ff' : '#e0e0e0'};
-  color: ${props => props.isUser ? 'white' : 'black'};
-  border-radius: 20px;
-  max-width: 70%;
-  align-self: ${props => props.isUser ? 'flex-end' : 'flex-start'};
+    margin-bottom: 8px;
+    padding: 8px;
+    background-color: ${(props) => (props.isUser ? '#0084ff' : '#e0e0e0')};
+    color: ${(props) => (props.isUser ? 'white' : 'black')};
+    border-radius: 20px;
+    max-width: 70%;
+    align-self: ${(props) => (props.isUser ? 'flex-end' : 'flex-start')};
+`;
+
+const MessageInicio = styled.div`
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; 
+    text-align: center;
+    
+    background-color: #f9f9f9; 
+`;
+
+const Image = styled.img`
+    width: 250px; =
+    height: auto;
+    border-radius: 50%;
+    margin-bottom: 20px;=
+`;
+
+const Text = styled.p`
+    font-size: 1.5rem;
+    color: #333;
+    margin: 0;
 `;
 
 const Chat = () => {
+    const location = useLocation();
+    const { username } = location.state || {}; // Obtén el username del estado de la ruta
+    const [userId, setUserId] = useState(null);
     const [contacts, setContacts] = useState([]);
     const [messages, setMessages] = useState([]);
     const [selectedContact, setSelectedContact] = useState(null);
-    const [inputMessage, setInputMessage] = useState('');
-    const userId = "674d484122d4184410ee7a45";
+    const [inputMessage, setInputMessage] = useState("");
+    const [chatId, setChatId] = useState(null);
+    const navigate = useNavigate();
+    const [client, setClient] = useState(null);
 
-    // Llamada para obtener contactos
+    // Verifica si el username está disponible
     useEffect(() => {
-        const fetchContacts = async () => {
-            try {
-                const response = await fetch(`http://localhost:8080/api/contacts/get-contacts?userId=${userId}`);
-                if (!response.ok) {
-                    throw new Error('Error al obtener los contactos');
-                }
-                const data = await response.json();
-                console.log('Contacts data:', data); // Verifica si los datos se reciben correctamente
-                setContacts(data);
-            } catch (error) {
-                console.error('Error fetching contacts:', error);
-            }
-        };
+        if (!username) {
+            // Si no hay username, redirige al login
+            console.error("Username is missing. Redirecting to login.");
+            navigate("/login");
+        }
+    }, [username, navigate]);
 
-
-        fetchContacts();
-    }, [userId]);
-
-    // Llamada para obtener mensajes de un chat seleccionado
+    // Obtener el userId usando el username
     useEffect(() => {
-        const fetchMessages = async () => {
-            if (selectedContact) {
+        if (username) {
+            const fetchUserId = async () => {
                 try {
-                    const response = await fetch(`http://localhost:8080/chats/${selectedContact.id}/messages`);
+                    const response = await axios.get(
+                        `http://localhost:8080/api/users/getUserId?username=${username}`
+                    );
+                    if (response.data) {
+                        setUserId(response.data); // Asume que el backend devuelve el userId
+                    } else {
+                        console.error("User ID not found.");
+                    }
+                } catch (error) {
+                    console.error("Error fetching user ID:", error);
+                }
+            };
+
+            fetchUserId();
+        }
+    }, [username]);
+
+    // Fetch de contactos
+    useEffect(() => {
+        if (userId) {
+            const fetchContacts = async () => {
+                try {
+                    const response = await fetch(
+                        `http://localhost:8080/api/contacts/get-contacts?userId=${userId}`
+                    );
                     if (!response.ok) {
-                        throw new Error('Error al obtener los mensajes');
+                        throw new Error("Error al obtener los contactos");
                     }
                     const data = await response.json();
-                    setMessages(data);
+                    setContacts(data);
                 } catch (error) {
-                    console.error('Error fetching messages:', error);
+                    console.error("Error fetching contacts:", error);
                 }
+            };
+
+            fetchContacts();
+        }
+    }, [userId]);
+
+    // Obtener o crear chat al seleccionar un contacto
+    const getOrCreateChat = async (user1Username, user2Username) => {
+        try {
+            const response = await fetch(
+                `http://localhost:8080/chats/get-or-create?user1=${user1Username}&user2=${user2Username}`
+            );
+            if (!response.ok) {
+                throw new Error("Error al obtener o crear el chat");
             }
-        };
+            const data = await response.json();
+            setChatId(data.chatId);
+        } catch (error) {
+            console.error("Error fetching chat:", error);
+        }
+    };
 
-        fetchMessages();
-    }, [selectedContact]);
+    // Conexión WebSocket para recibir mensajes en tiempo real
+    useEffect(() => {
+        if (chatId && !client) {
+            const stompClient = new Client({
+                brokerURL: "ws://localhost:8080/chats", // URL del WebSocket
+                onConnect: () => {
+                    console.log("Conectado al WebSocket");
 
-    // Función para manejar el envío de mensajes
+                    // Suscripción al chat usando el chatId
+                    stompClient.subscribe(`/topic/chat/${chatId}`, (message) => {
+                        const newMessage = JSON.parse(message.body);
+                        // Agregar el nuevo mensaje recibido al estado
+                        setMessages((prevMessages) => [...prevMessages, newMessage]);
+                    });
+                },
+                onDisconnect: () => {
+                    console.log("Desconectado del WebSocket");
+                },
+            });
+
+            stompClient.activate();
+            setClient(stompClient);
+
+            // Cleanup de WebSocket cuando el componente se desmonte
+            return () => stompClient.deactivate();
+        }
+    }, [chatId]); // Esto se ejecuta cada vez que cambia el chatId
+
+    // Fetch de mensajes al cargar el chat
+    const fetchMessages = async (currentChatId) => {
+        if (!currentChatId) {
+            setMessages([]);
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://localhost:8080/chats/${currentChatId}/messages`);
+            if (!response.ok) {
+                throw new Error("Error al cargar mensajes");
+            }
+            const data = await response.json();
+
+            if (data && data.length > 0) {
+                setMessages(data);
+            } else {
+                setMessages([]);
+            }
+        } catch (error) {
+            console.error("Error fetching messages:", error);
+            setMessages([]);
+        }
+    };
+
+    useEffect(() => {
+        if (chatId) {
+            fetchMessages(chatId);
+        } else {
+            setMessages([]);
+        }
+    }, [chatId]);
+
+    // Manejo del envío de mensajes
     const handleSendMessage = async (e) => {
         e.preventDefault();
 
@@ -129,38 +268,56 @@ const Chat = () => {
 
         const messageData = {
             content: inputMessage,
-            sender: userId,
-            receiver: selectedContact.name,
+            senderId: userId,
+            receiverId: selectedContact.id,
+            chatId: chatId,
         };
 
         try {
-            const response = await fetch('http://localhost:8080/sendMessage', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(messageData),
-            });
+            // Envía el mensaje al servidor (no por WebSocket, sino por HTTP primero)
+            const response = await fetch(
+                `http://localhost:8080/chats/sendMessage?chatId=${chatId}&sender=${userId}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(messageData),
+                }
+            );
 
             if (!response.ok) {
-                throw new Error('Error al enviar el mensaje');
+                throw new Error("Error al enviar el mensaje");
             }
 
             const newMessage = await response.json();
+
+            // Después de que el servidor lo procese, el WebSocket se encarga de propagarlo
             setMessages((prevMessages) => [...prevMessages, newMessage]);
-            setInputMessage('');
+            setInputMessage(""); // Limpiar el campo de entrada
         } catch (error) {
-            console.error('Error sending message:', error);
+            console.error("Error al enviar el mensaje:", error);
         }
+    };
+
+    // Manejo de selección de contacto
+    const handleContactSelect = (contact) => {
+        setSelectedContact(contact);
+        getOrCreateChat(username, contact.username); // Usa el username para el chat
     };
 
     return (
         <Container>
             <ContactList>
                 {contacts.map((contact) => (
-                    <ContactItem key={contact.id} onClick={() => setSelectedContact(contact)}>
-                        <h3>{contact.name}</h3>
-                        <p>{contact.lastMessage}</p>
+                    <ContactItem key={contact.id} onClick={() => handleContactSelect(contact)}>
+                        <ProfileImage
+                            src={contact.profilePicture || 'null'}
+                            alt={`${contact.username} profile`}
+                        />
+                        <div>
+                            <h3>{contact.username}</h3>
+                        </div>
                     </ContactItem>
                 ))}
             </ContactList>
@@ -169,14 +326,17 @@ const Chat = () => {
                 {selectedContact ? (
                     <>
                         <Header>
-                            <h2>{selectedContact.name}</h2>
-                            <FiPhone />
-                            <FiVideo />
+
+                            <h2>{selectedContact.username}</h2>
+                            <ProfileImage
+                                src={selectedContact.profilePicture || 'null'}
+                                alt={`${selectedContact.username} profile`}
+                            />
                         </Header>
 
                         <MessageList>
                             {messages.map((message) => (
-                                <Message key={message.id} isUser={message.sender === userId}>
+                                <Message key={message.id} isUser={message.senderId === userId}>
                                     {message.content}
                                 </Message>
                             ))}
@@ -195,7 +355,13 @@ const Chat = () => {
                         </InputArea>
                     </>
                 ) : (
-                    <p>Selecciona un chat para comenzar</p>
+                    <MessageInicio>
+                        <Image
+                            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQlHGITJiW_D_3sb6Qb4SnJDym4rdp-9ip84Q&s"
+                            alt="logo pimeva"
+                        />
+                        <Text>Selecciona un contacto para iniciar a chatear!</Text>
+                    </MessageInicio>
                 )}
             </ChatArea>
         </Container>
@@ -203,3 +369,4 @@ const Chat = () => {
 };
 
 export default Chat;
+

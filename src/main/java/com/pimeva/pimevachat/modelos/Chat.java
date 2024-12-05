@@ -44,5 +44,7 @@ public class Chat {
         }
     }
 
-
+//
+//    public void setParticipants(String user1Id, String user2Id) {
+//    }
 }

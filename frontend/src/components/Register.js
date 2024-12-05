@@ -1,6 +1,17 @@
 import React, { useState } from "react";
 import axios from "axios"; // Importamos axios
 import "./Register.css"
+import styled from "styled-components";
+
+const Image = styled.img`
+    width: 120px; =
+    height: auto;
+    border-radius: 50%;
+    margin-bottom: -10px;
+    margin-left: 115px;
+`;
+
+
 const Register = () => {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
@@ -62,9 +73,11 @@ const Register = () => {
 
     return (
         <div className="register-container">
-            {/*<img src="../images/logo.jpg" alt="Logo"/>*/}
             <form className="register-form" onSubmit={handleSubmit}>
-                <h2>Register</h2>
+                <Image src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQlHGITJiW_D_3sb6Qb4SnJDym4rdp-9ip84Q&s"
+                       alt="logo" />
+                <h2>Sign up</h2>
+                <p>And join the Pimeva community</p>
                 <div className="input-group">
                     <label>Username:</label>
                     <input

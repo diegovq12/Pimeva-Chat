@@ -35,7 +35,7 @@ public class UserService {
             return ResponseEntity.badRequest().body("Username already exists!");
         }
 
-        user.setProfilePicture("https://drive.google.com/file/d/1TSNW9T10Sq_dtm8dY6owuUOtkH0vNWdL/view");
+        user.setProfilePicture("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png");
         user.setOnline(false);
         user.setContacts(new ArrayList<>());
         user.setContactRequests(new ArrayList<>());
@@ -104,5 +104,12 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-
+    public String getUserIdByUsername(String username) {
+        // Buscar al usuario en la base de datos por su username
+        Optional<User> user = userRepository.findByUsername(username);
+        if (user != null) {
+            return user.get().getId();  // Retornar el userId
+        }
+        return null; // O manejar caso de error (usuario no encontrado)
+    }
 }

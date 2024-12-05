@@ -22,26 +22,40 @@ public class ChatService {
     @Autowired
     private UserRepository userRepository;
 
-    public Chat getOrCreateChat(String user1, String user2) throws UserNotFoundException {
-        User userOne = userRepository.findByUsername(user1)
-                .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado: " + user1));
-        User userTwo = userRepository.findByUsername(user2)
-                .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado: " + user2));
+    public Chat getOrCreateChatByIds(String userId1, String userId2) throws UserNotFoundException {
+        // Buscar los usuarios por sus IDs
+        User user1 = userRepository.findById(userId1)
+                .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado: " + userId1));
+        User user2 = userRepository.findById(userId2)
+                .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado: " + userId2));
 
-        // Lógica para encontrar o crear un chat
-        return chatRepository.findByParticipantsContainingBoth(user1,user2)
+        // Buscar si ya existe un chat entre estos dos usuarios
+        return chatRepository.findByParticipantsContainingBoth(userId1, userId2)
                 .orElseGet(() -> {
                     Chat newChat = new Chat();
-                    newChat.getParticipants().add(userOne);
-                    newChat.getParticipants().add(userTwo);
-                    return chatRepository.save(newChat);
+                    newChat.getParticipants().add(user1);  // Agregar el objeto User completo
+                    newChat.getParticipants().add(user2);  // Agregar el objeto User completo
+                    return chatRepository.save(newChat);  // Guardar el chat en la base de datos
                 });
     }
+
+
 
     public List<Message> getChatMessages(String chatId) throws ChatNotFoundException {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ChatNotFoundException("Chat not found"));
         return chat.getMessages(); // Aquí aseguramos que sea una lista de mensajes
     }
+
+    public Optional<Chat> getChatIdByParticipants(String userId1, String userId2) {
+        try {
+            return chatRepository.findByParticipantsContainingBoth(userId1, userId2);
+        } catch (Exception e) {
+            throw new RuntimeException("Error al obtener el chatId: " + e.getMessage(), e);
+        }
+    }
+
+
+
 
 }
