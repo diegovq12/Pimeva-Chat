@@ -34,6 +34,8 @@ const Header = styled.div`
 `;
 
 const MessageList = styled.div`
+    display: flex;
+    flex-direction: column;
     flex: 1;
     padding: 16px;
     overflow-y: auto;
@@ -86,12 +88,13 @@ const ProfileImage = styled.img`
 
 const Message = styled.div`
     margin-bottom: 8px;
+    font-size: 1.25rem;
     padding: 8px;
-    background-color: ${(props) => (props.isUser ? '#0084ff' : '#e0e0e0')};
-    color: ${(props) => (props.isUser ? 'white' : 'black')};
+    background-color: ${(props) => (props.$isUser ? '#0084ff' : '#e0e0e0')};
+    color: ${(props) => (props.$isUser ? 'white' : 'black')};
     border-radius: 20px;
     max-width: 70%;
-    align-self: ${(props) => (props.isUser ? 'flex-end' : 'flex-start')};
+    align-self: ${(props) => (props.$isUser ? 'flex-end' : 'flex-start')};
 `;
 
 const MessageInicio = styled.div`
@@ -128,12 +131,11 @@ const Chat = () => {
     const [inputMessage, setInputMessage] = useState("");
     const [chatId, setChatId] = useState(null);
     const navigate = useNavigate();
-    const [client, setClient] = useState(null);
+    const [client, setClient] = useState(null); // WebSocket client
 
     // Verifica si el username está disponible
     useEffect(() => {
         if (!username) {
-            // Si no hay username, redirige al login
             console.error("Username is missing. Redirecting to login.");
             navigate("/login");
         }
@@ -194,38 +196,50 @@ const Chat = () => {
             }
             const data = await response.json();
             setChatId(data.chatId);
+
+            // Suscribirse a mensajes del chat
+            if (client) {
+                client.send(
+                    JSON.stringify({
+                        action: "subscribe",
+                        chatId: data.chatId,
+                    })
+                );
+            }
         } catch (error) {
             console.error("Error fetching chat:", error);
         }
     };
 
-    // Conexión WebSocket para recibir mensajes en tiempo real
+
     useEffect(() => {
         if (chatId && !client) {
-            const stompClient = new Client({
-                brokerURL: "ws://localhost:8080/chats", // URL del WebSocket
-                onConnect: () => {
-                    console.log("Conectado al WebSocket");
-
-                    // Suscripción al chat usando el chatId
-                    stompClient.subscribe(`/topic/chat/${chatId}`, (message) => {
-                        const newMessage = JSON.parse(message.body);
-                        // Agregar el nuevo mensaje recibido al estado
-                        setMessages((prevMessages) => [...prevMessages, newMessage]);
-                    });
+            console.log("Connecting to WebSocket...");
+            const client = new Client({
+                brokerURL: "ws://localhost:8080/chatWS",
+                connectHeaders: {
+                    userId: userId.toString(),
                 },
-                onDisconnect: () => {
-                    console.log("Desconectado del WebSocket");
+                debug: function (str) {
+                    console.log(str);
                 },
+                reconnectDelay: 5000,
+                heartbeatIncoming: 4000,
+                heartbeatOutgoing: 4000,
             });
 
-            stompClient.activate();
-            setClient(stompClient);
+            client.onConnect = () => {
+                console.log("Connected to WebSocket");
+                client.subscribe(`/topic/chat/${chatId}`, (message) => {
+                    const data = JSON.parse(message.body);
+                    setMessages((prevMessages) => [...prevMessages, data]);
+                });
+            };
 
-            // Cleanup de WebSocket cuando el componente se desmonte
-            return () => stompClient.deactivate();
+            client.activate();
+            setClient(client);
         }
-    }, [chatId]); // Esto se ejecuta cada vez que cambia el chatId
+    }, [chatId]);  // Esto se ejecuta cada vez que cambia el chatId
 
     // Fetch de mensajes al cargar el chat
     const fetchMessages = async (currentChatId) => {
@@ -261,7 +275,7 @@ const Chat = () => {
     }, [chatId]);
 
     // Manejo del envío de mensajes
-    const handleSendMessage = async (e) => {
+    const handleSendMessage = (e) => {
         e.preventDefault();
 
         if (!inputMessage.trim()) return;
@@ -269,36 +283,30 @@ const Chat = () => {
         const messageData = {
             content: inputMessage,
             senderId: userId,
-            receiverId: selectedContact.id,
             chatId: chatId,
         };
 
         try {
-            // Envía el mensaje al servidor (no por WebSocket, sino por HTTP primero)
-            const response = await fetch(
-                `http://localhost:8080/chats/sendMessage?chatId=${chatId}&sender=${userId}`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(messageData),
-                }
-            );
+            // Envía el mensaje al servidor mediante WebSocket
+            client.publish({
+                destination: `/app/chat/${chatId}`,
+                body: JSON.stringify(messageData),
+            });
 
-            if (!response.ok) {
-                throw new Error("Error al enviar el mensaje");
-            }
 
-            const newMessage = await response.json();
+            // Agrega temporalmente el mensaje al estado del cliente
+            setMessages((prevMessages) => [
+                ...prevMessages,
+                { ...messageData, senderUsername: username }, // Ajusta esto según los datos que necesitas mostrar
+            ]);
 
-            // Después de que el servidor lo procese, el WebSocket se encarga de propagarlo
-            setMessages((prevMessages) => [...prevMessages, newMessage]);
-            setInputMessage(""); // Limpiar el campo de entrada
+            setInputMessage(""); // Limpia el campo de entrada
         } catch (error) {
-            console.error("Error al enviar el mensaje:", error);
+            console.error("Error sending message via WebSocket:", error);
         }
     };
+
+
 
     // Manejo de selección de contacto
     const handleContactSelect = (contact) => {
@@ -306,11 +314,21 @@ const Chat = () => {
         getOrCreateChat(username, contact.username); // Usa el username para el chat
     };
 
+
     return (
         <Container>
+            <div>
+
+            </div>
             <ContactList>
+                <ContactItem key={userId}>
+                    <h2>Logged as {username}</h2>
+                </ContactItem>
+                <h3 style={{ fontSize: '24px', marginBottom: '5px', padding:'10px'}}>
+                    Contacts
+                </h3>
                 {contacts.map((contact) => (
-                    <ContactItem key={contact.id} onClick={() => handleContactSelect(contact)}>
+                <ContactItem key={contact.id} onClick={() => handleContactSelect(contact)}>
                         <ProfileImage
                             src={contact.profilePicture || 'null'}
                             alt={`${contact.username} profile`}
@@ -335,8 +353,8 @@ const Chat = () => {
                         </Header>
 
                         <MessageList>
-                            {messages.map((message) => (
-                                <Message key={message.id} isUser={message.senderId === userId}>
+                            {messages.map((message, index) => (
+                                <Message key={message.id || index} $isUser={message.senderId === userId}>
                                     {message.content}
                                 </Message>
                             ))}

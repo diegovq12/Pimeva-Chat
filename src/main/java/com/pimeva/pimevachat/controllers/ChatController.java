@@ -14,6 +14,7 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
@@ -31,7 +32,11 @@ public class ChatController {
     MessageRepository messageRepository;
     @Autowired
     MessageService messageService;
-   public ChatController(MessageRepository messageRepository) {
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
+
+    public ChatController(MessageRepository messageRepository) {
        this.messageRepository = messageRepository;
    }
 
@@ -96,16 +101,21 @@ public class ChatController {
 
 
     @GetMapping("/{chatId}/messages")
+    @CrossOrigin(origins = "http://localhost:3000")
     public ResponseEntity<List<Message>> getChatMessages(@PathVariable String chatId) throws ChatNotFoundException {
         List<Message> messages = chatService.getChatMessages(chatId);
         return ResponseEntity.ok(messages);
     }
 
+
+    @MessageMapping("/chat/{chatId}")
+    @SendTo("/topic/chat/{chatId}")
     @PostMapping("/sendMessage")
-    public ResponseEntity<Map<String, Object>> sendMessage(
-            @RequestParam String chatId,
+    @CrossOrigin(origins = "http://localhost:3000")
+    public Map<String, Object> sendMessage(
+            @DestinationVariable String chatId,
             @RequestParam String sender,
-            @RequestBody Map<String, String> body // Recibe el cuerpo como un Map o un POJO
+            @RequestBody Map<String, String> body
     ) throws ChatNotFoundException {
 
         // Extrae el contenido del mensaje desde el cuerpo
@@ -113,31 +123,41 @@ public class ChatController {
 
         // Llama al servicio para enviar el mensaje
         Message message = messageService.sendMessage(chatId, content, sender);
+        System.out.println("Mensaje enviado: " + message);
 
         // Devuelve una respuesta consistente
         Map<String, Object> response = new HashMap<>();
         response.put("id", message.getId());
         response.put("chatId", message.getChatId());
-        response.put("content", message.getContent()); // Aquí aseguramos que el contenido sea texto plano
+        response.put("content", message.getContent());
         response.put("senderId", message.getSenderId());
         response.put("receiverId", message.getReceiverId());
         response.put("dateTime", message.getDateTime());
         response.put("fileUrl", message.getFileUrl());
         response.put("status", message.getStatus());
 
-        return ResponseEntity.ok(response);
+        System.out.println("Mensaje enviado: " + response);
+        System.out.println("ChatId: " + chatId);
+
+        return response;
     }
 
-    // Manejo de mensajes WebSocket
-    @MessageMapping("/sendMessage/{chatId}")
-    @SendTo("/topic/chat/{chatId}")
-    public Message sendMessageWebSocket(@Payload MessageDTO message, @
-            DestinationVariable String chatId) throws ChatNotFoundException {
-        // Procesa el mensaje en tiempo real
-        return messageService.sendMessage(chatId, message.getContent(), message.getSenderId().toString());
-    }
+//    @MessageMapping("/chat.sendMessage") // Mensajes que llegan desde el cliente
+//    @SendTo("/topic/chat/{chatId}") // Se envían a todos los suscritos a este canal
+//    public Message sendMessage(@Payload Message chatMessage) {
+//        // Lógica para guardar el mensaje en la base de datos, si es necesario
+//        messageRepository.save(chatMessage);
+//
+//        return chatMessage;
+//    }
+
+//    public void sendMessageToUser(String chatId, Message message) {
+//        messagingTemplate.convertAndSend("/topic/chat/" + chatId, message);
+//
+//    }
 
     @GetMapping("/getChatIdByParticipants")
+    @CrossOrigin(origins = "http://localhost:3000")
     public ResponseEntity<Map<String, String>> getChatIdByParticipants(@RequestParam String userId1, @RequestParam String userId2) {
         try {
             // Buscar el chat utilizando los IDs de los usuarios

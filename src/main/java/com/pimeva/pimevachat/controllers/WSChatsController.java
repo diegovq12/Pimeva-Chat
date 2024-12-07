@@ -26,38 +26,7 @@ public class WSChatsController {
         this.messageService = messageService;
     }
 
-//    @MessageMapping("/sendMessage/{chatId}")
-//    @SendTo("/topic/chat/{chatId}")
-//    public MessageDTO sendMessage(@Payload MessageDTO message, @DestinationVariable String chatId) throws ChatNotFoundException {
-//        // Validar si el chat existe
-//        Optional<Chat> chat = chatRepository.findById(chatId);
-//        if (!chat.isPresent()) {
-//            throw new ChatNotFoundException("El chat con ID " + chatId + " no existe.");
-//        }
-//
-//        // Procesar el mensaje (guardar en base de datos)
-//        Message newMessage = new Message();
-//        newMessage.setSenderId(message.getSenderId());
-//        newMessage.setReceiverId(message.getReceiverId());
-//        newMessage.setContent(message.getContent());
-//        newMessage.setTimestamp(LocalDateTime.now().toString());
-//        newMessage.setChatId(chatId);
-//
-//        // Guardar el mensaje en la base de datos
-//          messageRepository;
-//        Message savedMessage = messageRepository.save(newMessage);
-//
-//        // Retornar un DTO con los datos del mensaje
-//        return new MessageDTO(
-//                savedMessage.getSenderId(),
-//                savedMessage.getReceiverId(),
-//                savedMessage.getContent(),
-//                savedMessage.getTimestamp()
-//        );
-//    }
-//
-
-    @MessageMapping("/chat/{chatId}")
+//    @MessageMapping("/chat/{chatId}")
     @SendTo("/topic/chat/{chatId}")
     public MessageDTO getMessage(@Payload MessageDTO message, @DestinationVariable String chatId) throws ChatNotFoundException {
         System.out.println("Mensaje recibido en el chat " + chatId + ": " + message);
@@ -67,6 +36,7 @@ public class WSChatsController {
 
         // Convertir a DTO y retornar
         return new MessageDTO(
+                processedMessage.getChatId(),
                 processedMessage.getSenderId(),
                 processedMessage.getReceiverId(),
                 processedMessage.getContent(),

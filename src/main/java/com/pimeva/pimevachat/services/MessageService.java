@@ -39,6 +39,8 @@ public class MessageService {
 
         // Crea el nuevo mensaje
         Message message = new Message();
+        message.setChatId(chatId);
+        System.out.println("Sender: " + sender);
         message.setSenderId(sender);
         message.setReceiverId(receiver);
         message.setContent(content);
@@ -66,6 +68,7 @@ public class MessageService {
 
     public Message processMessage(MessageDTO messageDTO) {
         Message message = new Message();
+        message.setChatId(messageDTO.getChatId());
         message.setSenderId(String.valueOf(messageDTO.getSenderId()));
         message.setReceiverId(String.valueOf(messageDTO.getReceiverId()));
         message.setContent(messageDTO.getContent());
@@ -76,6 +79,7 @@ public class MessageService {
     }
     public Message add(MessageDTO messageDTO) {
         Message message = new Message();
+        message.setChatId(messageDTO.getChatId());
         message.setSenderId(messageDTO.getSenderId());
         message.setReceiverId(messageDTO.getReceiverId());
         message.setContent(messageDTO.getContent());
