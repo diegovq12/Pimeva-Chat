@@ -114,16 +114,16 @@ public class ChatController {
     @CrossOrigin(origins = "http://localhost:3000")
     public Map<String, Object> sendMessage(
             @DestinationVariable String chatId,
-            @RequestParam String sender,
-            @RequestBody Map<String, String> body
+            @RequestBody Map<String, Object> body // Cambiar el tipo a Object
     ) throws ChatNotFoundException {
+        // Extrae el contenido del mensaje
+        String content = (String) body.get("content");
 
-        // Extrae el contenido del mensaje desde el cuerpo
-        String content = body.get("content");
+        // Extrae el senderId
+        String sender = (String) body.get("senderId"); // Asegúrate de usar "senderId"
 
         // Llama al servicio para enviar el mensaje
         Message message = messageService.sendMessage(chatId, content, sender);
-        System.out.println("Mensaje enviado: " + message);
 
         // Devuelve una respuesta consistente
         Map<String, Object> response = new HashMap<>();
@@ -137,8 +137,6 @@ public class ChatController {
         response.put("status", message.getStatus());
 
         System.out.println("Mensaje enviado: " + response);
-        System.out.println("ChatId: " + chatId);
-
         return response;
     }
 
