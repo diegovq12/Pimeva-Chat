@@ -294,11 +294,11 @@ const Chat = () => {
             });
 
 
-            // Agrega temporalmente el mensaje al estado del cliente
-            setMessages((prevMessages) => [
-                ...prevMessages,
-                { ...messageData, senderUsername: username }, // Ajusta esto según los datos que necesitas mostrar
-            ]);
+            // // Agrega temporalmente el mensaje al estado del cliente
+            // setMessages((prevMessages) => [
+            //     ...prevMessages,
+            //     { ...messageData, senderUsername: username }, // Ajusta esto según los datos que necesitas mostrar
+            // ]);
 
             setInputMessage(""); // Limpia el campo de entrada
         } catch (error) {
