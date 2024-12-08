@@ -104,6 +104,14 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    public List<ContactDTO>getContactsRequests(String userId) throws UserNotFoundException {
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        return user.getContactRequests().stream()
+                .map(contact -> new ContactDTO(contact.getId(), contact.getUsername(), contact.getProfilePicture()))
+                .collect(Collectors.toList());
+    }
+
     public String getUserIdByUsername(String username) {
         // Buscar al usuario en la base de datos por su username
         Optional<User> user = userRepository.findByUsername(username);

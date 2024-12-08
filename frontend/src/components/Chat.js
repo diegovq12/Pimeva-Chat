@@ -314,8 +314,12 @@ const Chat = () => {
         getOrCreateChat(username, contact.username); // Usa el username para el chat
     };
 
+    const redirectToContacts = () => {
+        navigate("/contacts", { state: { username, userId } });
+    };
 
-    return (
+
+        return (
         <Container>
             <div>
 
@@ -324,11 +328,12 @@ const Chat = () => {
                 <ContactItem key={userId}>
                     <h2>Logged as {username}</h2>
                 </ContactItem>
-                <h3 style={{ fontSize: '24px', marginBottom: '5px', padding:'10px'}}>
+                <button style={{fontSize: '24px', marginBottom: '5px', padding: '10px'}}
+                        onClick={() => redirectToContacts(username, userId)}>
                     Contacts
-                </h3>
+                </button>
                 {contacts.map((contact) => (
-                <ContactItem key={contact.id} onClick={() => handleContactSelect(contact)}>
+                    <ContactItem key={contact.id} onClick={() => handleContactSelect(contact)}>
                         <ProfileImage
                             src={contact.profilePicture || 'null'}
                             alt={`${contact.username} profile`}

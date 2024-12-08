@@ -35,4 +35,10 @@ public class ContactsController {
         return ResponseEntity.ok(contacts);  // Retorna los contactos en la respuesta
     }
 
+    @GetMapping("/get-requests")
+    public ResponseEntity<List<ContactDTO>> getContactsRequests(@RequestParam String userId) throws UserNotFoundException {
+        List<ContactDTO> requests = userService.getContactsRequests(userId);  // Llama al servicio
+        return ResponseEntity.ok(requests);  // Retorna las solicitudes en la respuesta
+    }
+
 }
